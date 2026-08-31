@@ -12,7 +12,7 @@
 <button onclick="submitClaim()" style="background:#16a34a">Submit Claim to Billing Company</button><div id="msg"></div></div>
 
 <script>
-const SHEET_URL = 'PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbx2wXylIyrdhbuC4fH6jYxarTNebSCkcHfaYCZoEuaOZelFLg1HhQNg3DGOBb4fMnA/exec';
 const p = new URLSearchParams(location.search);
 if(p.get('company')) document.getElementById('companyCode').value = p.get('company');
 if(p.get('province')) document.getElementById('province').value = p.get('province');
