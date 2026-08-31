@@ -1,40 +1,95 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Doctor Portal</title>
-<style>body{font-family:system-ui;padding:16px;max-width:700px;margin:auto;background:#f0f9ff} input,select,textarea{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box} button{width:100%;padding:12px;background:#0f172a;color:#fff;border:0;border-radius:8px;font-weight:bold;cursor:pointer;margin-top:6px} .top{background:#e0f2fe;padding:12px;border-radius:10px} .card{background:#fff;padding:14px;border-radius:12px;margin:12px 0;border:1px solid #e2e8f0}</style></head><body>
-<a href="./">← Home</a><h2>🩺 Doctor Portal</h2><p>Module: Doctor Onboarding + Claims Capture + Notifications</p>
-<div class="top">Linked to: <b id="compLabel">Not linked</b><br>Province: <b id="provLabel">-</b><br>Doctor: <b id="docLabel">-</b></div>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medi-Clear - Doctor Portal</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f5f7fb;margin:0;padding:20px}
+.card{max-width:700px;margin:auto;background:white;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-bottom:20px}
+input,select{width:100%;padding:11px;margin:6px 0;border:1px solid #ddd;border-radius:8px;box-sizing:border-box}
+button{padding:12px 16px;background:#1e293b;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;margin-top:8px;width:100%}
+.info{background:#fffbeb;padding:10px;border-radius:8px;border:1px solid #fcd34d;margin-bottom:15px}
+.claim{background:#f8fafc;padding:12px;border-radius:8px;margin:8px 0;border-left:4px solid #10b981}
+</style>
+</head>
+<body>
+<div class="card">
+<div id="companyInfo" class="info">Loading...</div>
+<h3>Doctor Onboarding Module</h3>
+<input id="drName" placeholder="Doctor Full Name (no Dr prefix)">
+<input id="practiceNo" placeholder="Practice Number (e.g. 12345)">
+<input id="drPhone" placeholder="Doctor Phone 10 digits e.g. 0736388901">
+<select id="aid">
+<option value="">Select Medical Aid</option>
+<option>Discovery Health</option>
+<option>Bonitas</option>
+<option>Momentum</option>
+<option>Medshield</option>
+<option>Bestmed</option>
+<option>GEMS</option>
+<option>Other</option>
+</select>
+<button onclick="linkDoc()">Link Me & Save Nationally</button>
+</div>
 
-<div class="card"><h3>1. Link to Billing Company (Onboarding)</h3>
-<input id="companyCode" placeholder="Company Code e.g. GA-MEDBIL-1234"><input id="province" placeholder="Province e.g. Western Cape"><input id="dname" placeholder="Dr Full Name"><input id="practice" placeholder="Practice Number"><input id="contact" placeholder="Phone"><input id="email" placeholder="Email">
-<button onclick="linkDoc()">Link Me & Save Nationally</button></div>
-
-<div class="card"><h3>2. Submit Claim (Capture)</h3><p style="font-size:13px">Workflow: Doctor sees patient → Submit via code</p>
-<input id="patient" placeholder="Patient Full Name"><select id="aid"><option>Discovery Health</option><option>Bonitas</option><option>Bonitas</option><option>Momentum</option><option>GEMS</option><option>Medshield</option><option>Fedhealth</option><option>Other</option></select><input id="memberNo" placeholder="Member Number"><input id="icd" placeholder="ICD10 Code e.g. J06.9"><input id="tariff" placeholder="Tariff Codes e.g. 0190, 0145"><input id="amount" placeholder="Amount R e.g. 850"><textarea id="notes" placeholder="Clinical notes"></textarea>
-<button onclick="submitClaim()" style="background:#16a34a">Submit Claim to Billing Company</button><div id="msg"></div></div>
+<div class="card">
+<h3>Claims Capture + Clearing Module</h3>
+<input id="patient" placeholder="Patient Name">
+<input id="patientId" placeholder="Patient ID / DOB">
+<input id="icd" placeholder="ICD10 Code e.g. J06.9">
+<input id="tariff" placeholder="Tariff Code e.g. 0190">
+<input id="amount" placeholder="Amount e.g. 1000" type="number">
+<button onclick="submitClaim()">Submit Claim - Status: RECEIVED</button>
+<div id="claimsList"></div>
+</div>
 
 <script>
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbx2wXylIyrdhbuC4fH6jYxarTNebSCkcHfaYCZoEuaOZelFLg1HhQNg3DGOBb4fMnA/exec';
-const p = new URLSearchParams(location.search);
-if(p.get('company')) document.getElementById('companyCode').value = p.get('company');
-if(p.get('province')) document.getElementById('province').value = p.get('province');
-document.getElementById('compLabel').innerText = localStorage.getItem('mc_my_company') || p.get('company') || 'Not linked';
-document.getElementById('provLabel').innerText = localStorage.getItem('mc_my_prov') || p.get('province') || '-';
-document.getElementById('docLabel').innerText = localStorage.getItem('mc_my_doc') || '-';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbx2xXy11yrdhbuC4fH6JYxarTNebSCkcfHaYCZoEuaOZeLFLg1HhQNg3DGOBb4fMnA/exec';
+const params = new URLSearchParams(window.location.search);
+const companyCode = params.get('company') || localStorage.getItem('mc_my_company') || '';
+const province = params.get('province') || 'Unknown';
+document.getElementById('companyInfo').innerHTML = companyCode? `Linked to Company: <b>${companyCode}</b> | Province: ${province}<br><small>Module 2 active - Doctor will be billed under this company</small>` : 'No Company Code - Open via Company Link';
 
 function linkDoc(){
-  const code = document.getElementById('companyCode').value.toUpperCase();
-  const prov = document.getElementById('province').value;
-  const name = document.getElementById('dname').value;
-  const payload = {type:'doctor', company_code:code, province:prov, doctor_name:name, practice_no:document.getElementById('practice').value, contact:document.getElementById('contact').value, email:document.getElementById('email').value};
-  if(SHEET_URL.includes('script.google')){ fetch(SHEET_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); }
-  localStorage.setItem('mc_my_company', code); localStorage.setItem('mc_my_prov', prov); localStorage.setItem('mc_my_doc', name);
-  alert('✅ Linked to '+code+' in '+prov+' - Saved nationally'); location.reload();
+ const name=document.getElementById('drName').value.trim().replace(/^Dr\.?\s*/i,'');
+ const prac=document.getElementById('practiceNo').value.trim();
+ const phone=document.getElementById('drPhone').value.trim();
+ if(!name||!prac||!phone){alert('Fill Name, Practice No, Phone');return;}
+ if(phone.length<10){alert('Phone must be 10 digits');return;}
+ const doc={action:'registerDoctor', companyCode, province, doctorName:name, practiceNo:prac, phone, timestamp:new Date().toISOString()};
+ localStorage.setItem('mc_doc_'+companyCode+'_'+prac, JSON.stringify(doc));
+ let docs=JSON.parse(localStorage.getItem('mc_docs_'+companyCode)||'[]');
+ docs.push(doc); localStorage.setItem('mc_docs_'+companyCode, JSON.stringify(docs));
+ alert('Doctor '+name+' linked to '+companyCode);
+ fetch(SHEET_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(doc)});
+ renderClaims();
 }
-function submitClaim(){
-  const code = localStorage.getItem('mc_my_company'); const prov = localStorage.getItem('mc_my_prov'); const doc = localStorage.getItem('mc_my_doc');
-  if(!code) return alert('Link to company first - Step 1');
-  const payload = {type:'claim', company_code:code, province:prov, doctor_name:doc, patient:document.getElementById('patient').value, medical_aid:document.getElementById('aid').value, member_no:document.getElementById('memberNo').value, icd10:document.getElementById('icd').value, tariff:document.getElementById('tariff').value, amount:document.getElementById('amount').value, notes:document.getElementById('notes').value};
-  if(SHEET_URL.includes('script.google')){ fetch(SHEET_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); }
-  document.getElementById('msg').innerHTML = '<div style="background:#dcfce7;padding:12px;border-radius:8px;margin-top:10px">✅ Claim sent to '+code+' ('+prov+')<br>Status: RECEIVED - Company will validate & submit to Medical Aid</div>';
-  document.getElementById('patient').value=''; document.getElementById('memberNo').value=''; document.getElementById('amount').value='';
+async function submitClaim(){
+ const patient=document.getElementById('patient').value.trim();
+ const icd=document.getElementById('icd').value.trim();
+ const tariff=document.getElementById('tariff').value.trim();
+ const amount=document.getElementById('amount').value.trim();
+ const aid=document.getElementById('aid').value;
+ if(!patient||!icd||!amount){alert('Patient, ICD, Amount required');return;}
+ const claim={action:'submitClaim', companyCode, province, doctor:document.getElementById('drName').value.trim().replace(/^Dr\.?\s*/i,''), practiceNo:document.getElementById('practiceNo').value.trim(), patient, icd, tariff, amount, medicalAid:aid, status:'RECEIVED', timestamp:new Date().toISOString()};
+ let claims=JSON.parse(localStorage.getItem('mc_claims_'+companyCode)||'[]');
+ claims.push(claim); localStorage.setItem('mc_claims_'+companyCode, JSON.stringify(claims));
+ try{ await fetch(SHEET_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(claim)}); }catch(e){}
+ renderClaims();
+ document.getElementById('patient').value='';document.getElementById('icd').value='';document.getElementById('tariff').value='';document.getElementById('amount').value='';
 }
-</script></body></html>
+function renderClaims(){
+ const list=document.getElementById('claimsList');
+ const claims=JSON.parse(localStorage.getItem('mc_claims_'+companyCode)||'[]');
+ const docs=JSON.parse(localStorage.getItem('mc_docs_'+companyCode)||'[]');
+ if(!docs.length&&!claims.length){list.innerHTML='<p><small>No data yet</small></p>';return;}
+ let html=`<h4>Linked Doctors (${docs.length}) - Doctor Onboarding Module</h4>`;
+ docs.forEach(d=>{ html+=`<div class="claim">Dr ${d.doctorName} | Practice: ${d.practiceNo} | Phone: ${d.phone}</div>`; });
+ html+=`<h4>Claims Received (${claims.length}) - Claims Capture + Clearing Module</h4>`;
+ claims.forEach(c=>{ html+=`<div class="claim"><b>Dr ${c.doctor}</b> - Patient ${c.patient}<br>Aid: ${c.medicalAid} | ICD: ${c.icd} | Tariff: ${c.tariff} | R${c.amount}<br><small>${c.status}</small></div>`; });
+ list.innerHTML=html;
+}
+renderClaims();
+</script>
+</body>
+</html>
