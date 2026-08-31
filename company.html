@@ -1,0 +1,41 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Company Dashboard</title>
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto;background:#f8fafc}.card{background:#fff;padding:16px;border-radius:12px;margin:12px 0;border:1px solid #e2e8f0} input,select{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box} button{padding:12px;background:#0f172a;color:#fff;border:0;border-radius:8px;width:100%;font-weight:bold;cursor:pointer}</style></head><body>
+<a href="./">← Home</a><h2>🏢 Billing Company Dashboard</h2>
+<p>Module: Company Registration + Reports + Clearing Workflow</p>
+<div class="card" style="background:#fffbeb;border:2px solid #f59e0b"><h3>Step 1: Register to get Company Code</h3>
+<input id="cname" placeholder="Company Name e.g. MedBill SA"><input id="owner" placeholder="Owner Full Name"><input id="contact" placeholder="Phone + Email"><select id="province"><option>Eastern Cape</option><option>Free State</option><option>Gauteng</option><option>KwaZulu-Natal</option><option>Limpopo</option><option>Mpumalanga</option><option>Northern Cape</option><option>North West</option><option>Western Cape</option></select><select id="plan"><option>Starter R499 - 500 claims</option><option>Growth R899 - 2000 claims</option><option>Enterprise R1499 - Unlimited</option></select>
+<button onclick="register()">Generate Code & Register Nationally</button><div id="codeOut" style="margin-top:10px"></div></div>
+
+<div class="card"><h3>Linked Doctors (<span id="dcount">0</span>) - Doctor Onboarding Module</h3><div id="doctors">Enter company code to load...</div></div>
+<div class="card"><h3>Claims Received (<span id="ccount">0</span>) - Claims Capture + Clearing Module</h3><div id="claims">No data yet</div></div>
+
+<script>
+const SHEET_URL = 'PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE';
+const params = new URLSearchParams(location.search);
+if(params.get('province')) document.getElementById('province').value = params.get('province');
+
+function register(){
+  const prov = document.getElementById('province').value;
+  const name = document.getElementById('cname').value || 'COMPANY';
+  const code = prov.substring(0,2).toUpperCase() + '-' + name.replace(/ /g,'').toUpperCase().substring(0,6) + '-' + Math.floor(1000+Math.random()*9000);
+  localStorage.setItem('mc_code', code);
+  const payload = {type:'company', company_code:code, company_name:document.getElementById('cname').value, owner:document.getElementById('owner').value, contact:document.getElementById('contact').value, province:prov, plan:document.getElementById('plan').value};
+  if(SHEET_URL.includes('script.google')){ fetch(SHEET_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); }
+  document.getElementById('codeOut').innerHTML = `✅ YOUR COMPANY CODE: <b style="font-size:20px">${code}</b><br><br>Doctor link to give to doctors:<br><input value="https://maulthq014-web.github.io/mediclear-sa/doctor.html?company=${code}&province=${encodeURIComponent(prov)}"><br><br><small>Saved locally + to Sheet if URL set. Give this link to your doctors.</small>`;
+  load(code);
+}
+
+async function load(code){
+  const c = code || localStorage.getItem('mc_code');
+  if(!c || !SHEET_URL.includes('script.google')) return;
+  try{
+    const r = await fetch(SHEET_URL+'?action=company_data&company_code='+c);
+    const data = await r.json();
+    document.getElementById('dcount').innerText = data.doctors.length;
+    document.getElementById('doctors').innerHTML = data.doctors.map(x=>`<div style="padding:8px;border-bottom:1px solid #eee">🩺 ${x[3]} | Practice: ${x[4]} | ${x[5]}</div>`).join('') || 'No doctors yet';
+    document.getElementById('ccount').innerText = data.claims.length;
+    document.getElementById('claims').innerHTML = data.claims.reverse().map(x=>`<div style="padding:8px;border:1px solid #eee;margin:6px 0;border-radius:8px"><b>Dr ${x[3]}</b> - Patient ${x[4]}<br>Aid: ${x[5]} ${x[6]} | ICD: ${x[7]} | Tariff: ${x[8]} | R${x[9]}<br><span style="background:#dcfce7;padding:2px 6px;border-radius:6px">${x[10]}</span></div>`).join('') || 'No claims yet';
+  }catch(e){}
+}
+load();
+</script></body></html>
