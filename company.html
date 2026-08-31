@@ -1,41 +1,73 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Company Dashboard</title>
-<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto;background:#f8fafc}.card{background:#fff;padding:16px;border-radius:12px;margin:12px 0;border:1px solid #e2e8f0} input,select{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box} button{padding:12px;background:#0f172a;color:#fff;border:0;border-radius:8px;width:100%;font-weight:bold;cursor:pointer}</style></head><body>
-<a href="./">← Home</a><h2>🏢 Billing Company Dashboard</h2>
-<p>Module: Company Registration + Reports + Clearing Workflow</p>
-<div class="card" style="background:#fffbeb;border:2px solid #f59e0b"><h3>Step 1: Register to get Company Code</h3>
-<input id="cname" placeholder="Company Name e.g. MedBill SA"><input id="owner" placeholder="Owner Full Name"><input id="contact" placeholder="Phone + Email"><select id="province"><option>Eastern Cape</option><option>Free State</option><option>Gauteng</option><option>KwaZulu-Natal</option><option>Limpopo</option><option>Mpumalanga</option><option>Northern Cape</option><option>North West</option><option>Western Cape</option></select><select id="plan"><option>Starter R499 - 500 claims</option><option>Growth R899 - 2000 claims</option><option>Enterprise R1499 - Unlimited</option></select>
-<button onclick="register()">Generate Code & Register Nationally</button><div id="codeOut" style="margin-top:10px"></div></div>
-
-<div class="card"><h3>Linked Doctors (<span id="dcount">0</span>) - Doctor Onboarding Module</h3><div id="doctors">Enter company code to load...</div></div>
-<div class="card"><h3>Claims Received (<span id="ccount">0</span>) - Claims Capture + Clearing Module</h3><div id="claims">No data yet</div></div>
-
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medi-Clear - Company Registration</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f5f7fb;margin:0;padding:20px}
+.card{max-width:700px;margin:auto;background:white;padding:25px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+input,select{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:8px;box-sizing:border-box}
+button{width:100%;padding:14px;background:#1e293b;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
+button:hover{background:#0f172a}
+.success{background:#ecfdf5;border:1px solid #10b981;padding:15px;border-radius:8px;margin-top:15px;word-break:break-all}
+small{color:#64748b}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>Medi-Clear - National Company Registration</h2>
+<p><small>Module 1: Company Registration - All 9 Provinces</small></p>
+<input id="companyName" placeholder="Billing Company Name e.g. Thabiso Billing">
+<input id="ownerName" placeholder="Owner Full Name">
+<input id="contact" placeholder="Phone + Email e.g. 0736388901 / owner@gmail.com">
+<select id="province">
+<option value="">Select Province</option>
+<option>Eastern Cape</option>
+<option>Western Cape</option>
+<option>Gauteng</option>
+<option>KwaZulu-Natal</option>
+<option>Free State</option>
+<option>Limpopo</option>
+<option>Mpumalanga</option>
+<option>North West</option>
+<option>Northern Cape</option>
+</select>
+<select id="plan">
+<option value="Starter R499 - 500 claims">Starter R499 - 500 claims</option>
+<option value="Growth R899 - 1500 claims">Growth R899 - 1500 claims</option>
+<option value="Pro R1499 - 5000 claims">Pro R1499 - 5000 claims</option>
+</select>
+<button onclick="register()">Generate Code & Register Nationally</button>
+<div id="result"></div>
+</div>
 <script>
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbx2wXylIyrdhbuC4fH6jYxarTNebSCkcHfaYCZoEuaOZelFLg1HhQNg3DGOBb4fMnA/exec';
-const params = new URLSearchParams(location.search);
-if(params.get('province')) document.getElementById('province').value = params.get('province');
-
-function register(){
-  const prov = document.getElementById('province').value;
-  const name = document.getElementById('cname').value || 'COMPANY';
-  const code = prov.substring(0,2).toUpperCase() + '-' + name.replace(/ /g,'').toUpperCase().substring(0,6) + '-' + Math.floor(1000+Math.random()*9000);
-  localStorage.setItem('mc_code', code);
-  const payload = {type:'company', company_code:code, company_name:document.getElementById('cname').value, owner:document.getElementById('owner').value, contact:document.getElementById('contact').value, province:prov, plan:document.getElementById('plan').value};
-  if(SHEET_URL.includes('script.google')){ fetch(SHEET_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); }
-  document.getElementById('codeOut').innerHTML = `✅ YOUR COMPANY CODE: <b style="font-size:20px">${code}</b><br><br>Doctor link to give to doctors:<br><input value="https://maulthq014-web.github.io/mediclear-sa/doctor.html?company=${code}&province=${encodeURIComponent(prov)}"><br><br><small>Saved locally + to Sheet if URL set. Give this link to your doctors.</small>`;
-  load(code);
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbx2xXy11yrdhbuC4fH6JYxarTNebSCkcfHaYCZoEuaOZeLFLg1HhQNg3DGOBb4fMnA/exec';
+const PROVINCE_CODES = {
+"Eastern Cape":"EC","Western Cape":"WC","Gauteng":"GP","KwaZulu-Natal":"KZN","Free State":"FS","Limpopo":"LP","Mpumalanga":"MP","North West":"NW","Northern Cape":"NC"
+};
+async function register(){
+ const company=document.getElementById('companyName').value.trim();
+ const owner=document.getElementById('ownerName').value.trim();
+ const contact=document.getElementById('contact').value.trim();
+ const province=document.getElementById('province').value;
+ const plan=document.getElementById('plan').value;
+ if(!company||!owner||!province){alert('Fill Company, Owner, Province');return;}
+ const code = PROVINCE_CODES[province] + '-BILL-' + Math.floor(1000+Math.random()*9000);
+ const data = {action:'registerCompany', companyCode:code, companyName:company, ownerName:owner, contact:contact, province:province, plan:plan, timestamp:new Date().toISOString()};
+ localStorage.setItem('mc_my_company', code);
+ localStorage.setItem('mc_company_'+code, JSON.stringify(data));
+ document.getElementById('result').innerHTML = `<div class="success">
+ <b>YOUR COMPANY CODE: ${code}</b><br><br>
+ Company: ${company}<br>Province: ${province}<br>Plan: ${plan}<br><br>
+ <b>Doctor Onboarding Link (share with doctors):</b><br>
+ <a href="doctor.html?company=${code}&province=${encodeURIComponent(province)}" target="_blank">
+ https://maulthq014-web.github.io/mediclear-sa/doctor.html?company=${code}&province=${encodeURIComponent(province)}
+ </a><br><br>
+ <small>Saved locally + to National Sheet</small>
+ </div>`;
+ try{ await fetch(SHEET_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(data)}); }catch(e){console.log('Sheet offline, local saved');}
 }
-
-async function load(code){
-  const c = code || localStorage.getItem('mc_code');
-  if(!c || !SHEET_URL.includes('script.google')) return;
-  try{
-    const r = await fetch(SHEET_URL+'?action=company_data&company_code='+c);
-    const data = await r.json();
-    document.getElementById('dcount').innerText = data.doctors.length;
-    document.getElementById('doctors').innerHTML = data.doctors.map(x=>`<div style="padding:8px;border-bottom:1px solid #eee">🩺 ${x[3]} | Practice: ${x[4]} | ${x[5]}</div>`).join('') || 'No doctors yet';
-    document.getElementById('ccount').innerText = data.claims.length;
-    document.getElementById('claims').innerHTML = data.claims.reverse().map(x=>`<div style="padding:8px;border:1px solid #eee;margin:6px 0;border-radius:8px"><b>Dr ${x[3]}</b> - Patient ${x[4]}<br>Aid: ${x[5]} ${x[6]} | ICD: ${x[7]} | Tariff: ${x[8]} | R${x[9]}<br><span style="background:#dcfce7;padding:2px 6px;border-radius:6px">${x[10]}</span></div>`).join('') || 'No claims yet';
-  }catch(e){}
-}
-load();
-</script></body></html>
+</script>
+</body>
+</html>
