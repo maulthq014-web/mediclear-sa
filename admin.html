@@ -1,32 +1,52 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Super Admin</title>
-<style>body{font-family:system-ui;padding:16px;background:#0f172a;color:#fff;min-height:100vh} a{color:#7dd3fc} input{padding:10px;border-radius:8px;border:0;width:250px} button{padding:10px 16px;border-radius:8px;border:0;font-weight:bold;cursor:pointer;background:#f59e0b} .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:16px} .card{background:#1e293b;padding:14px;border-radius:12px;border:1px solid #334155} .badge{padding:2px 8px;border-radius:20px;font-size:12px} .paid{background:#22c55e} .pending{background:#eab308} table{width:100%;border-collapse:collapse} th,td{padding:8px;border-bottom:1px solid #334155;text-align:left;font-size:13px}</style></head><body>
-<a href="./">← Home</a><h1>👑 Super Admin Dashboard</h1><p>Owner Module - Manage Rentals Nationally • 9 Provinces • Revenue Model</p>
-
-<div style="background:#1e293b;padding:12px;border-radius:10px">Google Sheet Live Feed URL: <input id="sheetUrl" placeholder="Paste your script.google.com URL"><button onclick="saveUrl()">Save</button><button onclick="loadData()" style="background:#0ea5e9;color:#fff;margin-left:6px">Refresh Live Data</button></div>
-
-<div class="grid">
-<div class="card"><h3>💰 Revenue Summary</h3><div id="rev">Connect Sheet to see</div></div>
-<div class="card"><h3>🏢 Companies (Tenants)</h3><div id="companies">Loading...</div></div>
-<div class="card"><h3>🩺 Doctors National</h3><div id="docs">Loading...</div></div>
-<div class="card"><h3>📄 Claims Clearing Workflow</h3><div id="claims">Loading...</div></div>
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medi-Clear Super Admin</title>
+<style>
+body{font-family:Arial,sans-serif;background:#0f172a;color:white;margin:0;padding:15px}
+.card{background:#1e293b;padding:15px;border-radius:10px;margin:10px 0}
+input{padding:10px;border-radius:8px;border:none;width:65%}
+button{padding:10px 14px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;margin-left:5px}
+.save{background:#ef4444;color:white}.refresh{background:#2563eb;color:white}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th,td{padding:8px;border-bottom:1px solid #334155;text-align:left}
+</style>
+</head>
+<body>
+<h2>Super Admin Dashboard - LIVE</h2>
+<div class="card">
+<input id="urlInput" placeholder="Paste Web App URL">
+<button class="save" onclick="saveUrl()">Save</button>
+<button class="refresh" onclick="loadData()">Refresh Live Data</button>
+<small id="status"></small>
 </div>
-
-<div class="card" style="margin-top:12px"><h3>Full Companies Table - Rental Management</h3><table><thead><tr><th>Date</th><th>Code</th><th>Name</th><th>Owner</th><th>Province</th><th>Plan</th><th>Status</th><th>Action</th></tr></thead><tbody id="fullTable"></tbody></table></div>
-
+<div class="card"><h3 id="rev">Revenue: Loading...</h3><div id="counts"></div></div>
+<div class="card">
+<h3>Full Companies Table - Rental Management</h3>
+<table><thead><tr><th>Date</th><th>Code</th><th>Name</th><th>Owner</th><th>Province</th><th>Plan</th><th>Status</th></tr></thead><tbody id="compTable"><tr><td colspan=7>Loading...</td></tr></tbody></table>
+<p><a id="sheetLink" href="#" target="_blank" style="color:#60a5fa">Open Sheet</a></p>
+</div>
 <script>
-function saveUrl(){ localStorage.setItem('mc_admin_url', document.getElementById('sheetUrl').value); alert('Saved'); loadData(); }
-document.getElementById('sheetUrl').value = localStorage.getItem('mc_admin_url') || '';
-const SHEET_URL = localStorage.getItem('mc_admin_url');
-
+const DEFAULT_URL='https://script.google.com/macros/s/AKfycbx2wXyIlyrdhbuC4fH6jYxarTNebSCkcHfaYCZoEuaOZelFLg1HhQNg3DGOBb4fMnA/exec';
+function getUrl(){return localStorage.getItem('mc_sheet_url')||DEFAULT_URL;}
+function saveUrl(){const v=document.getElementById('urlInput').value.trim()||DEFAULT_URL;localStorage.setItem('mc_sheet_url',v);document.getElementById('status').innerText='Saved!';loadData();}
+window.onload=()=>{document.getElementById('urlInput').value=getUrl();loadData();};
 async function loadData(){
-  const url = localStorage.getItem('mc_admin_url');
-  if(!url || !url.includes('script.google')) return alert('https://script.google.com/macros/s/AKfycbx2wXylIyrdhbuC4fH6jYxarTNebSCkcHfaYCZoEuaOZelFLg1HhQNg3DGOBb4fMnA/exec');
-  // We will fetch from Google Sheet directly using open CSV export for now - simple version
-  document.getElementById('companies').innerHTML='Use Google Sheet tabs to see live data.<br><br>Companies Sheet: Filter by Province to see per-province tenants.<br><br>To change status: Go to Sheet → Companies → column status → Change PENDING to ACTIVE when paid.';
-  document.getElementById('docs').innerHTML='Doctors onboarding across SA.<br><br>Check Doctors tab in Sheet.';
-  document.getElementById('claims').innerHTML='Claims workflow:<br><br>RECEIVED → VALIDATED → SUBMITTED → PAID<br><br>Update status in Claims tab.';
-  document.getElementById('rev').innerHTML='Rental Logic:<br><br>Starter R499 x clients<br>Growth R899 x clients<br>Enterprise R1499 x clients<br><br>Setup R1500 once<br><br><b>Go to Google Sheet to calculate MRR</b>';
-  document.getElementById('fullTable').innerHTML='<tr><td colspan=8>Data lives in Google Sheet - <a href="https://sheets.google.com" target="_blank">Open Sheet</a></td></tr>';
+ const url=getUrl(); document.getElementById('status').innerText='Loading...';
+ document.getElementById('sheetLink').href='https://docs.google.com/spreadsheets/d/10YDUgvs2cBil8yOMTACJIGNLzN0Nb3QF8qxCQgpr5QSIsxEqPOK0L3QUu';
+ try{
+  const res=await fetch(url+'?action=getAll'); const data=await res.json();
+  const comps=data.companies||[]; const docs=data.doctors||[]; const claims=data.claims||[];
+  let rev=0; comps.forEach(c=>{let p=(c.plan||'').toString(); if(p.includes('499'))rev+=499; else if(p.includes('899'))rev+=899; else if(p.includes('1499')||p.includes('Enterprise'))rev+=1499;});
+  document.getElementById('rev').innerHTML=`Revenue: R${rev}/month | ${comps.length} Companies | ${docs.length} Doctors | ${claims.length} Claims<br><small>Setup R1500 x ${comps.length} = R${comps.length*1500} once-off</small>`;
+  document.getElementById('counts').innerHTML=`<small>Starter R499 | Growth R899 | Pro R1499</small>`;
+  let html=''; comps.forEach(c=>{
+    html+=`<tr><td>${c.timestamp||''}</td><td>${c.company_code||c.companyCode||''}</td><td>${c.company_name||c.companyName||''}</td><td>${c.owner||''}</td><td>${c.province||''}</td><td>${c.plan||''}</td><td style="color:${c.status=='PENDING'?'orange':'#22c55e'}">${c.status||'PENDING'}</td></tr>`;
+  });
+  document.getElementById('compTable').innerHTML=html||'<tr><td colspan=7>No companies - Register one at company.html</td></tr>';
+  document.getElementById('status').innerText='Live Data Loaded: '+comps.length;
+ }catch(e){document.getElementById('status').innerText='Error: '+e.message+' - Did you Deploy New Version as Anyone?';}
 }
-loadData();
-</script></body></html>
+</script>
+</body>
+</html>
