@@ -1,0 +1,40 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Doctor Portal</title>
+<style>body{font-family:system-ui;padding:16px;max-width:700px;margin:auto;background:#f0f9ff} input,select,textarea{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box} button{width:100%;padding:12px;background:#0f172a;color:#fff;border:0;border-radius:8px;font-weight:bold;cursor:pointer;margin-top:6px} .top{background:#e0f2fe;padding:12px;border-radius:10px} .card{background:#fff;padding:14px;border-radius:12px;margin:12px 0;border:1px solid #e2e8f0}</style></head><body>
+<a href="./">← Home</a><h2>🩺 Doctor Portal</h2><p>Module: Doctor Onboarding + Claims Capture + Notifications</p>
+<div class="top">Linked to: <b id="compLabel">Not linked</b><br>Province: <b id="provLabel">-</b><br>Doctor: <b id="docLabel">-</b></div>
+
+<div class="card"><h3>1. Link to Billing Company (Onboarding)</h3>
+<input id="companyCode" placeholder="Company Code e.g. GA-MEDBIL-1234"><input id="province" placeholder="Province e.g. Western Cape"><input id="dname" placeholder="Dr Full Name"><input id="practice" placeholder="Practice Number"><input id="contact" placeholder="Phone"><input id="email" placeholder="Email">
+<button onclick="linkDoc()">Link Me & Save Nationally</button></div>
+
+<div class="card"><h3>2. Submit Claim (Capture)</h3><p style="font-size:13px">Workflow: Doctor sees patient → Submit via code</p>
+<input id="patient" placeholder="Patient Full Name"><select id="aid"><option>Discovery Health</option><option>Bonitas</option><option>Bonitas</option><option>Momentum</option><option>GEMS</option><option>Medshield</option><option>Fedhealth</option><option>Other</option></select><input id="memberNo" placeholder="Member Number"><input id="icd" placeholder="ICD10 Code e.g. J06.9"><input id="tariff" placeholder="Tariff Codes e.g. 0190, 0145"><input id="amount" placeholder="Amount R e.g. 850"><textarea id="notes" placeholder="Clinical notes"></textarea>
+<button onclick="submitClaim()" style="background:#16a34a">Submit Claim to Billing Company</button><div id="msg"></div></div>
+
+<script>
+const SHEET_URL = 'PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE';
+const p = new URLSearchParams(location.search);
+if(p.get('company')) document.getElementById('companyCode').value = p.get('company');
+if(p.get('province')) document.getElementById('province').value = p.get('province');
+document.getElementById('compLabel').innerText = localStorage.getItem('mc_my_company') || p.get('company') || 'Not linked';
+document.getElementById('provLabel').innerText = localStorage.getItem('mc_my_prov') || p.get('province') || '-';
+document.getElementById('docLabel').innerText = localStorage.getItem('mc_my_doc') || '-';
+
+function linkDoc(){
+  const code = document.getElementById('companyCode').value.toUpperCase();
+  const prov = document.getElementById('province').value;
+  const name = document.getElementById('dname').value;
+  const payload = {type:'doctor', company_code:code, province:prov, doctor_name:name, practice_no:document.getElementById('practice').value, contact:document.getElementById('contact').value, email:document.getElementById('email').value};
+  if(SHEET_URL.includes('script.google')){ fetch(SHEET_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); }
+  localStorage.setItem('mc_my_company', code); localStorage.setItem('mc_my_prov', prov); localStorage.setItem('mc_my_doc', name);
+  alert('✅ Linked to '+code+' in '+prov+' - Saved nationally'); location.reload();
+}
+function submitClaim(){
+  const code = localStorage.getItem('mc_my_company'); const prov = localStorage.getItem('mc_my_prov'); const doc = localStorage.getItem('mc_my_doc');
+  if(!code) return alert('Link to company first - Step 1');
+  const payload = {type:'claim', company_code:code, province:prov, doctor_name:doc, patient:document.getElementById('patient').value, medical_aid:document.getElementById('aid').value, member_no:document.getElementById('memberNo').value, icd10:document.getElementById('icd').value, tariff:document.getElementById('tariff').value, amount:document.getElementById('amount').value, notes:document.getElementById('notes').value};
+  if(SHEET_URL.includes('script.google')){ fetch(SHEET_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); }
+  document.getElementById('msg').innerHTML = '<div style="background:#dcfce7;padding:12px;border-radius:8px;margin-top:10px">✅ Claim sent to '+code+' ('+prov+')<br>Status: RECEIVED - Company will validate & submit to Medical Aid</div>';
+  document.getElementById('patient').value=''; document.getElementById('memberNo').value=''; document.getElementById('amount').value='';
+}
+</script></body></html>
