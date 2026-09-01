@@ -48,7 +48,7 @@ async function loadData(){
   document.getElementById('rev').innerHTML=`Revenue: R${rev}/month | ${comps.length} Companies | ${docs.length} Doctors | ${claims.length} Claims<br><small>Setup R1500 x ${comps.length} = R${comps.length*1500} once-off</small>`;
   document.getElementById('counts').innerHTML=`<small>Starter R499 | Growth R899 | Pro R1499</small>`;
   let html=''; comps.forEach(c=>{
-    html+=`<tr><td>${c.timestamp||''}</td><td>${c.company_code||''}</td><td>${c.company_name||''}</td><td>${c.owner||''}</td><td>${c.province||''}</td><td>${c.plan||''}</td><td style="color:${c.status=='PENDING'?'orange':'#22c55e'}">${c.status||'PENDING'}</td></tr>`;
+   html+=`<tr><td>${c.timestamp||''}</td><td>${c.company_code||''}</td><td>${c.company_name||''}</td><td>${c.owner||''}</td><td>${c.province||''}</td><td>${c.plan||''}</td><td>${c.status||'PENDING'} ${c.status=='PENDING'?`<button onclick="activate('${c.company_code}')" style="background:#22c55e;color:white;border:none;border-radius:4px;padding:2px 6px;cursor:pointer">Activate</button>`:''}</td></tr>`;
   });
   document.getElementById('compTable').innerHTML=html||'<tr><td colspan=7>No results</td></tr>';
   document.getElementById('status').innerText='Live Data: '+comps.length+' found';
@@ -56,6 +56,14 @@ async function loadData(){
 }
 function searchData(){loadData();}
 function clearSearch(){document.getElementById('searchInput').value='';loadData();}
+ async function activate(code){
+ if(!confirm('Activate '+code+'?')) return;
+ const url=getUrl();
+ try{
+  await fetch(url,{method:'POST',body:JSON.stringify({action:'updateStatus',companyCode:code,status:'ACTIVE'})});
+  alert(code+' Activated!'); loadData();
+ }catch(e){alert('Error: '+e.message);}
+}
 </script>
 </body>
 </html>
