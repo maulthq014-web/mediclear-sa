@@ -23,14 +23,14 @@ th,td{padding:8px;border-bottom:1px solid #334155;text-align:left}
 <input id="searchInput" class="searchBox" placeholder="Search by Code e.g. MC001">
 <button class="refresh" onclick="searchData()">Search</button>
 <button class="refresh" style="background:#64748b" onclick="clearSearch()">Clear</button>
-<small id="status"></small>
-</div>
-<div class="card"><h3 id="rev">Revenue: Loading...</h3><div id="counts"></div></div>
-<div class="card">
-<h3>Full Companies Table</h3>
-<table><thead><tr><th>Date</th><th>Code</th><th>Name</th><th>Owner</th><th>Province</th><th>Plan</th><th>Status</th></tr></thead><tbody id="compTable"><tr><td colspan=7>Loading...</td></tr></tbody></table>
-<p><a id="sheetLink" href="#" target="_blank" style="color:#60a5fa">Open Sheet</a></p>
-</div>
+async function activate(code){
+ if(!confirm('Activate '+code+'?')) return;
+ const url=getUrl();
+ try{
+  await fetch(url,{method:'POST',body:JSON.stringify({action:'updateStatus',companyCode:code,status:'ACTIVE'})});
+  alert(code+' Activated!'); loadData();
+ }catch(e){alert('Error: '+e.message);}
+}
 <script>
 const DEFAULT_URL='https://script.google.com/macros/s/AKfycbzGlrpKO-PEIal_7tL5Bvs0JT2EgNz50Jf_eHpgT_sA2_w3Jux-D9Ur2I0th3DUQ_U/exec';
 function getUrl(){return localStorage.getItem('mc_sheet_url')||DEFAULT_URL;}
